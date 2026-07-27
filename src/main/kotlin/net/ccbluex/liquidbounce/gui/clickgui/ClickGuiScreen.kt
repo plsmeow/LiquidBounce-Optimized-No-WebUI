@@ -104,6 +104,11 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
                 px += ClickGuiTheme.PANEL_WIDTH + 6f
             }
         }
+        // Initialize HUD elements so they have default sizes for hit-testing
+        for (element in HudElementRegistry.getAll()) {
+            element.renderPosition = Vector2f(element.position.get())
+            element.setEditorDefaultSize(80f, 16f)
+        }
         buildSettingsGroups()
     }
 
@@ -173,9 +178,9 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
     }
 
     private fun renderTabBar(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        ctx.fillRect(0f, 0f, width.toFloat(), tabBarHeight.toFloat(), ClickGuiTheme.panelHeader)
-
         val totalWidth = Tab.entries.size * tabButtonWidth
+        val barX = (width - totalWidth) / 2f
+        ctx.fillRect(barX - 4f, 0f, totalWidth + 8f, tabBarHeight.toFloat(), ClickGuiTheme.panelHeader)
         var tx = (width - totalWidth) / 2f
 
         for (tab in Tab.entries) {
@@ -254,14 +259,22 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
             context.fillRect(0f, gy.toFloat(), width.toFloat(), 1f, gridColor)
         }
 
+        // Render enabled elements first so lastBaseWidth/Height are updated
+        val event = net.ccbluex.liquidbounce.event.events.OverlayRenderEvent(context, delta)
+        for (element in elements) {
+            if (element.enabled.get()) {
+                runCatching { element.render(context, event) }
+            }
+        }
+
         // Draw ALL elements (even disabled ones, dimmed)
         for (element in elements) {
             val enabled = element.enabled.get()
             val (w, h) = element.getScaledSize()
             if (w <= 0f || h <= 0f) continue
-            val pos = element.renderPosition
-            val ex = pos.x
-            val ey = pos.y
+            val anchor = element.getAnchor()
+            val ex = anchor.x
+            val ey = anchor.y
 
             val outlineAlpha = if (enabled) 255 else 100
             val labelAlpha = if (enabled) 255 else 80
@@ -328,6 +341,9 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
         val mouseY = click.y
         val button = click.button()
 
+        // HUD editor element click (highest priority - elements may overlap tab bar)
+        if (activeTab == Tab.HUD_EDITOR && handleHudEditorClick(mouseX, mouseY, button)) return true
+
         // Tab bar click
         if (mouseY <= tabBarHeight) {
             val totalWidth = Tab.entries.size * tabButtonWidth
@@ -389,6 +405,7 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
         val setting = panel.settingAt(mouseX, mouseY)
         if (setting != null) {
             clearFocus(setting)
+            pressedSetting?.onRelease()
             setting.mouseClicked(mouseX, mouseY, button)
             pressedSetting = setting
             (setting as? TextSetting)?.let { focusedText = it }
@@ -417,8 +434,8 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
             val ey = anchor.y
             if (mouseX.toFloat() in ex..ex + w && mouseY.toFloat() in ey..ey + h) {
                 draggingElement = element
-                hudDragOffsetX = (mouseX - ex).toFloat()
-                hudDragOffsetY = (mouseY - ey).toFloat()
+                hudDragOffsetX = (mouseX - element.renderPosition.x).toFloat()
+                hudDragOffsetY = (mouseY - element.renderPosition.y).toFloat()
                 hudPressX = mouseX
                 hudPressY = mouseY
                 hudMoved = false
@@ -430,14 +447,14 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
 
     private fun handleSettingsClick(mouseX: Double, mouseY: Double, button: Int): Boolean {
         for ((_, settings) in settingsGroups) {
-            for (setting in settings) {
-                if (setting.hovered(mouseX, mouseY)) {
-                    setting.mouseClicked(mouseX, mouseY, button)
-                    pressedSettingsSetting = setting
-                    (setting as? TextSetting)?.let { focusedText = it }
-                    (setting as? BindSetting)?.let { bindingSetting = it }
-                    return true
-                }
+            val setting = settingAt(settings, mouseX, mouseY)
+            if (setting != null) {
+                pressedSettingsSetting?.onRelease()
+                setting.mouseClicked(mouseX, mouseY, button)
+                pressedSettingsSetting = setting
+                (setting as? TextSetting)?.let { focusedText = it }
+                (setting as? BindSetting)?.let { bindingSetting = it }
+                return true
             }
         }
         return false
@@ -581,6 +598,13 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
             return true
         }
 
+        pressedSetting?.let { s ->
+            if (s.onKeyPressed(input.key, input.scancode(), input.modifiers())) return true
+        }
+        pressedSettingsSetting?.let { s ->
+            if (s.onKeyPressed(input.key, input.scancode(), input.modifiers())) return true
+        }
+
         return super.keyPressed(input)
     }
 
@@ -597,6 +621,14 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
             it.onCharTyped(event.codepoint().toChar())
             return true
         }
+
+        pressedSetting?.let { s ->
+            if (s.onCharTyped(event.codepoint().toChar())) return true
+        }
+        pressedSettingsSetting?.let { s ->
+            if (s.onCharTyped(event.codepoint().toChar())) return true
+        }
+
         return super.charTyped(event)
     }
 

@@ -50,6 +50,29 @@ object GuiRender {
         }
         return result + ellipsis
     }
+
+    /**
+     * Tracks hover time per setting key for marquee scrolling.
+     * Returns elapsed milliseconds since first hover.
+     */
+    private val hoverStartTimes = HashMap<Long, Long>()
+
+    fun getHoverTimeMs(key: Long): Long {
+        val now = System.currentTimeMillis()
+        val start = hoverStartTimes[key] ?: run {
+            hoverStartTimes[key] = now
+            return 0L
+        }
+        return now - start
+    }
+
+    fun clearHover(key: Long) {
+        hoverStartTimes.remove(key)
+    }
+
+    fun clearAllHovers() {
+        hoverStartTimes.clear()
+    }
 }
 
 fun GuiGraphicsExtractor.fillRect(x: Float, y: Float, width: Float, height: Float, color: Color4b) {
@@ -90,4 +113,37 @@ fun GuiGraphicsExtractor.drawTextCenteredY(
 ) {
     val y = rowTop + (rowHeight - mc.font.lineHeight) / 2f
     drawText(text, x, y, color, shadow)
+}
+
+/**
+ * Draws text with marquee scrolling when hovered for > 500ms.
+ * If text fits within [maxWidth], it is drawn normally.
+ * If it overflows and is hovered long enough, text scrolls left with "..." prefix.
+ */
+fun GuiGraphicsExtractor.drawMarqueeText(
+    text: String,
+    x: Float,
+    y: Float,
+    maxWidth: Int,
+    color: Int,
+    hoverKey: Long
+) {
+    val textW = mc.font.width(text)
+    if (textW <= maxWidth) {
+        drawText(text, x, y, color)
+        return
+    }
+    val hoverMs = GuiRender.getHoverTimeMs(hoverKey)
+    if (hoverMs < 600L) {
+        val trimmed = GuiRender.trim(text, maxWidth)
+        drawText(trimmed, x, y, color)
+        return
+    }
+    val scrollSpeed = 0.04
+    val totalScroll = (textW - maxWidth + 20).toFloat()
+    val offset = ((hoverMs - 600L) * scrollSpeed % totalScroll).toFloat()
+    val charOffset = (offset / (textW.toFloat() / text.length.coerceAtLeast(1))).toInt()
+    val visibleText = text.substring(charOffset.coerceAtMost(text.length))
+    val trimmed = GuiRender.trim(visibleText, maxWidth)
+    drawText(trimmed, x, y, color)
 }

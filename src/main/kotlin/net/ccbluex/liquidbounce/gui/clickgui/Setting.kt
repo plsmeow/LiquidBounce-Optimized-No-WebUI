@@ -18,6 +18,8 @@
  */
 package net.ccbluex.liquidbounce.gui.clickgui
 
+import net.ccbluex.liquidbounce.config.types.CurveValue
+import net.ccbluex.liquidbounce.config.types.FileValue
 import net.ccbluex.liquidbounce.config.types.RangedValue
 import net.ccbluex.liquidbounce.config.types.Value
 import net.ccbluex.liquidbounce.config.types.ValueType
@@ -25,7 +27,9 @@ import net.ccbluex.liquidbounce.config.types.group.ModeValueGroup
 import net.ccbluex.liquidbounce.config.types.group.ToggleableValueGroup
 import net.ccbluex.liquidbounce.config.types.group.ValueGroup
 import net.ccbluex.liquidbounce.config.types.list.ChoiceListValue
+import net.ccbluex.liquidbounce.config.types.list.ItemListValue
 import net.ccbluex.liquidbounce.config.types.list.MultiChoiceListValue
+import net.ccbluex.liquidbounce.config.types.list.MutableListValue
 import net.ccbluex.liquidbounce.config.types.list.Tagged
 import net.ccbluex.liquidbounce.render.engine.type.Color4b
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -111,12 +115,20 @@ object SettingFactory {
         ValueType.TEXT -> TextSetting(value, indent)
         ValueType.BIND, ValueType.KEY -> BindSetting(value, indent)
         ValueType.COLOR -> ColorSetting(value, indent)
+        ValueType.FILE -> if (value is FileValue) FileSetting(value, indent) else LabelSetting(value, indent)
+        ValueType.CURVE -> if (value is CurveValue) CurveSetting(value, indent) else LabelSetting(value, indent)
         ValueType.CHOOSE -> if (value is ChoiceListValue<*>) EnumSetting(value, indent) else LabelSetting(value, indent)
         ValueType.MULTI_CHOOSE ->
             if (value is MultiChoiceListValue<*>) MultiChooseSetting(value, indent) else LabelSetting(value, indent)
         ValueType.CHOICE -> if (value is ModeValueGroup<*>) ModeSetting(value, indent) else LabelSetting(value, indent)
         ValueType.CONFIGURABLE, ValueType.TOGGLEABLE ->
             if (value is ValueGroup) GroupSetting(value, indent) else LabelSetting(value, indent)
+        ValueType.VECTOR2_F, ValueType.VECTOR3_I, ValueType.VECTOR3_D -> VectorSetting(value, indent)
+        ValueType.MUTABLE_LIST -> MutableListSetting(value, indent)
+        ValueType.REGISTRY_LIST -> RegistryListSetting(value, indent)
+        ValueType.REGISTRY_MUTABLE_LIST -> RegistryMutableListSetting(value, indent)
+        ValueType.NAMED_ITEM_LIST ->
+            if (value is ItemListValue<*, *>) ItemListSetting(value, indent) else LabelSetting(value, indent)
         else -> LabelSetting(value, indent)
     }
 }
