@@ -292,6 +292,10 @@ object LiquidBounce : EventListener {
         CommandManager.registerInbuilt()
         ModuleManager.registerInbuilt()
 
+        // Register HUD elements (TargetHUD, Notifications, ArrayList, ...)
+        runCatching(net.ccbluex.liquidbounce.gui.hud.HudElements::registerAll)
+            .onFailure { error -> logger.error("HudElements failed to register.", error) }
+
         // Load user scripts
         runCatching(ScriptManager::loadAll).onFailure { error ->
             logger.error("ScriptManager was unable to load scripts.", error)

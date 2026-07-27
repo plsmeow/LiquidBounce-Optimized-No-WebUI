@@ -50,13 +50,13 @@ class ModuleButton(val module: ClientModule) {
             hovered -> ctx.fillRect(x, y, width, rowHeight, ClickGuiTheme.moduleHover)
         }
         val textColor = if (module.enabled) ClickGuiTheme.textOnAccent else ClickGuiTheme.textPrimary
-        ctx.drawTextCenteredY(module.name, x + ClickGuiTheme.TEXT_PADDING, y, rowHeight, textColor)
 
-        if (expanded) {
-            val marker = ">"
-            ctx.drawTextCenteredY(marker, x + width - ClickGuiTheme.TEXT_PADDING - GuiRender.textWidth(marker), y,
-                rowHeight, textColor)
-        }
+        // Collapse/expand icon on the left: "+" when collapsed, "-" when expanded
+        val icon = if (expanded) "-" else "+"
+        ctx.drawTextCenteredY(icon, x + ClickGuiTheme.TEXT_PADDING, y, rowHeight, textColor)
+
+        // Module name next to the icon
+        ctx.drawTextCenteredY(module.name, x + ClickGuiTheme.TEXT_PADDING + 10f, y, rowHeight, textColor)
     }
 
     fun hoveredRow(mouseX: Double, mouseY: Double): Boolean =
@@ -66,20 +66,33 @@ class ModuleButton(val module: ClientModule) {
 /**
  * A draggable, scrollable window holding all modules of one [category].
  */
-class Panel(val category: ModuleCategory, var x: Float, var y: Float) {
+class Panel(val category: ModuleCategory, var x: Float, var y: Float, collapsed: Boolean = false) {
 
     val width = ClickGuiTheme.PANEL_WIDTH.toFloat()
-    var collapsed = false
+    var collapsed = collapsed
+        set(value) {
+            field = value
+            ClickGuiState.setState(category.tag, ClickGuiState.PanelState(x, y, value))
+        }
     private var scroll = 0f
+
+    /** Non-null means only modules whose name contains [searchFilter] are shown. */
+    var searchFilter: String? = null
 
     val buttons: List<ModuleButton> =
         ModuleManager.filter { it.category == category }
             .sortedBy { it.name }
             .map(::ModuleButton)
 
+    private fun displayedButtons(): List<ModuleButton> {
+        val query = searchFilter
+        if (query == null || query.isEmpty()) return buttons
+        return buttons.filter { it.module.name.lowercase().contains(query) }
+    }
+
     private val headerHeight get() = ClickGuiTheme.HEADER_HEIGHT.toFloat()
 
-    private fun contentHeight(): Float = buttons.sumOf { it.contentHeight().toDouble() }.toFloat()
+    private fun contentHeight(): Float = displayedButtons().sumOf { it.contentHeight().toDouble() }.toFloat()
 
     private fun maxBodyHeight(screenHeight: Int): Float = max(40f, screenHeight * 0.75f)
 
@@ -110,7 +123,7 @@ class Panel(val category: ModuleCategory, var x: Float, var y: Float) {
         val bounds = ctx.getBounds(x, bodyTop, x + width, bodyTop + bodyHeight)
         ctx.scissorStack.withPush(bounds) {
             var yy = bodyTop - scroll
-            for (button in buttons) {
+            for (button in displayedButtons()) {
                 button.x = x
                 button.y = yy
                 button.width = width
@@ -134,10 +147,10 @@ class Panel(val category: ModuleCategory, var x: Float, var y: Float) {
 
     /** @return the module button whose row is under the cursor, or null. */
     fun buttonAt(mouseX: Double, mouseY: Double): ModuleButton? =
-        buttons.firstOrNull { it.hoveredRow(mouseX, mouseY) }
+        displayedButtons().firstOrNull { it.hoveredRow(mouseX, mouseY) }
 
     fun settingAt(mouseX: Double, mouseY: Double): Setting? {
-        for (button in buttons) {
+        for (button in displayedButtons()) {
             if (button.expanded) {
                 settingAt(button.settings, mouseX, mouseY)?.let { return it }
             }

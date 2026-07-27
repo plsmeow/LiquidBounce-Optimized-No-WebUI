@@ -76,7 +76,7 @@ object ModuleHud : ClientModule("HUD", ModuleCategories.RENDER, state = true, hi
     @Suppress("unused")
     private val overlayRenderHandler = handler<OverlayRenderEvent> { event ->
         if (running && isVisible) {
-            NativeHud.render(event.context)
+            NativeHud.render(event.context, event)
         }
     }
 

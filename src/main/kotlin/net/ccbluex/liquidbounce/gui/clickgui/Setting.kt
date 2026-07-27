@@ -127,8 +127,11 @@ object SettingFactory {
 class LabelSetting(value: Value<*>, indent: Int) : Setting(value, indent) {
     override fun renderRow(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         rowBackground(ctx, mouseX, mouseY)
-        ctx.drawTextCenteredY(displayName, labelX, y, rowHeight, ClickGuiTheme.textPrimary)
         val text = valueText()
+        val rightTextWidth = if (text.isNotEmpty()) ClickGuiTheme.TEXT_PADDING + GuiRender.textWidth(text) else 0
+        val maxLabelWidth = (width - (labelX - x) - rightTextWidth - 4f).toInt().coerceAtLeast(20)
+        val label = GuiRender.trim(displayName, maxLabelWidth)
+        ctx.drawTextCenteredY(label, labelX, y, rowHeight, ClickGuiTheme.textPrimary)
         if (text.isNotEmpty()) {
             val tx = x + width - ClickGuiTheme.TEXT_PADDING - GuiRender.textWidth(text)
             ctx.drawTextCenteredY(text, tx, y, rowHeight, ClickGuiTheme.textSecondary)
@@ -140,7 +143,7 @@ class LabelSetting(value: Value<*>, indent: Int) : Setting(value, indent) {
         is Collection<*> -> ""
         else -> {
             val s = v.toString()
-            if (s.length > 14) GuiRender.trim(s, 60) else s
+            if (GuiRender.textWidth(s) > 80) GuiRender.trim(s, 80) else s
         }
     }
 }

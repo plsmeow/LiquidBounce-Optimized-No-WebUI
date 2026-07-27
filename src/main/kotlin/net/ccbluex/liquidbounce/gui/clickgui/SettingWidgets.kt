@@ -266,11 +266,23 @@ class BindSetting(value: Value<*>, indent: Int) : Setting(value, indent) {
     override fun renderRow(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         rowBackground(ctx, mouseX, mouseY)
         ctx.drawTextCenteredY(displayName, labelX, y, rowHeight, ClickGuiTheme.textPrimary)
-        val text = if (listening) "..." else "[${bindValue.get().keyName}]"
+        val bind = bindValue.get()
+        val text = if (listening) {
+            "..."
+        } else {
+            "[${bind.keyName}] ${bind.action.tag}"
+        }
         rightText(ctx, text, if (listening) ClickGuiTheme.textActive else ClickGuiTheme.textSecondary)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (button == 1) {
+            val current = bindValue.get()
+            val actions = InputBind.BindAction.entries
+            val nextIdx = (actions.indexOf(current.action) + 1) % actions.size
+            bindValue.set(current.copy(action = actions[nextIdx]))
+            return true
+        }
         listening = true
         return true
     }
@@ -299,9 +311,13 @@ class EnumSetting(private val choice: ChoiceListValue<*>, indent: Int) : Setting
 
     override fun renderRow(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         rowBackground(ctx, mouseX, mouseY)
-        ctx.drawTextCenteredY(displayName, labelX, y, rowHeight, ClickGuiTheme.textPrimary)
         val current = (choice.get() as? Tagged)?.tag ?: "?"
-        rightText(ctx, "< $current >", ClickGuiTheme.accent.argb)
+        val rightText = "< $current >"
+        val rightTextWidth = GuiRender.textWidth(rightText) + ClickGuiTheme.TEXT_PADDING
+        val maxLabelWidth = (width - (labelX - x) - rightTextWidth - 4f).toInt().coerceAtLeast(20)
+        val label = GuiRender.trim(displayName, maxLabelWidth)
+        ctx.drawTextCenteredY(label, labelX, y, rowHeight, ClickGuiTheme.textPrimary)
+        rightText(ctx, rightText, ClickGuiTheme.accent.argb)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
@@ -331,11 +347,14 @@ class MultiChooseSetting(private val multi: MultiChoiceListValue<*>, indent: Int
 
     override fun renderRow(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         rowBackground(ctx, mouseX, mouseY)
-        ctx.drawTextCenteredY(if (open) ARROW_EXPANDED else ARROW_COLLAPSED, x + ClickGuiTheme.TEXT_PADDING +
-            indent * ClickGuiTheme.SETTING_INDENT, y, rowHeight, ClickGuiTheme.textSecondary)
-        ctx.drawTextCenteredY(displayName, labelX + 7f, y, rowHeight, ClickGuiTheme.textPrimary)
-        val count = (multi.get() as Collection<*>).size
-        rightText(ctx, "$count selected", ClickGuiTheme.textSecondary)
+        val arrowX = x + ClickGuiTheme.TEXT_PADDING + indent * ClickGuiTheme.SETTING_INDENT
+        ctx.drawTextCenteredY(if (open) ARROW_EXPANDED else ARROW_COLLAPSED, arrowX, y, rowHeight, ClickGuiTheme.textSecondary)
+        val rightText = "${(multi.get() as Collection<*>).size} selected"
+        val rightTextWidth = GuiRender.textWidth(rightText) + ClickGuiTheme.TEXT_PADDING
+        val maxLabelWidth = (width - indent * ClickGuiTheme.SETTING_INDENT - ClickGuiTheme.TEXT_PADDING * 3 - rightTextWidth - 7f).toInt().coerceAtLeast(20)
+        val label = GuiRender.trim(displayName, maxLabelWidth)
+        ctx.drawTextCenteredY(label, labelX + 7f, y, rowHeight, ClickGuiTheme.textPrimary)
+        rightText(ctx, rightText, ClickGuiTheme.textSecondary)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
@@ -472,8 +491,12 @@ class ModeSetting(private val mode: ModeValueGroup<*>, indent: Int) : Setting(mo
         rowBackground(ctx, mouseX, mouseY)
         ctx.drawTextCenteredY(if (open) ARROW_EXPANDED else ARROW_COLLAPSED, x + ClickGuiTheme.TEXT_PADDING +
             indent * ClickGuiTheme.SETTING_INDENT, y, rowHeight, ClickGuiTheme.textSecondary)
-        ctx.drawTextCenteredY(displayName, labelX + 7f, y, rowHeight, ClickGuiTheme.textPrimary)
-        rightText(ctx, "< ${mode.activeMode.name} >", ClickGuiTheme.accent.argb)
+        val rightText = "< ${mode.activeMode.name} >"
+        val rightTextWidth = GuiRender.textWidth(rightText) + ClickGuiTheme.TEXT_PADDING
+        val maxLabelWidth = (width - indent * ClickGuiTheme.SETTING_INDENT - ClickGuiTheme.TEXT_PADDING * 3 - rightTextWidth).toInt().coerceAtLeast(20)
+        val label = GuiRender.trim(displayName, maxLabelWidth)
+        ctx.drawTextCenteredY(label, labelX + 7f, y, rowHeight, ClickGuiTheme.textPrimary)
+        rightText(ctx, rightText, ClickGuiTheme.accent.argb)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
@@ -514,11 +537,14 @@ class GroupSetting(private val group: ValueGroup, indent: Int) : Setting(group, 
 
     override fun renderRow(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         rowBackground(ctx, mouseX, mouseY)
-        ctx.drawTextCenteredY(if (open) ARROW_EXPANDED else ARROW_COLLAPSED, x + ClickGuiTheme.TEXT_PADDING +
-            indent * ClickGuiTheme.SETTING_INDENT, y, rowHeight, ClickGuiTheme.textSecondary)
+        val arrowX = x + ClickGuiTheme.TEXT_PADDING + indent * ClickGuiTheme.SETTING_INDENT
+        ctx.drawTextCenteredY(if (open) ARROW_EXPANDED else ARROW_COLLAPSED, arrowX, y, rowHeight, ClickGuiTheme.textSecondary)
         val toggle = toggleable
         val nameColor = if (toggle != null && toggle.enabled) ClickGuiTheme.textActive else ClickGuiTheme.textPrimary
-        ctx.drawTextCenteredY(displayName, labelX + 7f, y, rowHeight, nameColor)
+        val rightTextWidth = if (toggle != null) ClickGuiTheme.TEXT_PADDING + 7 else 0
+        val maxLabelWidth = (width - indent * ClickGuiTheme.SETTING_INDENT - ClickGuiTheme.TEXT_PADDING * 3 - rightTextWidth - 7f).toInt().coerceAtLeast(20)
+        val label = GuiRender.trim(displayName, maxLabelWidth)
+        ctx.drawTextCenteredY(label, labelX + 7f, y, rowHeight, nameColor)
 
         if (toggle != null) {
             val boxSize = 7f

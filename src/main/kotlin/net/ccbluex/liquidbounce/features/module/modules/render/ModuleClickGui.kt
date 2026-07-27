@@ -19,6 +19,10 @@
 package net.ccbluex.liquidbounce.features.module.modules.render
 
 import net.ccbluex.liquidbounce.LiquidBounce
+import net.ccbluex.liquidbounce.config.types.group.ToggleableValueGroup
+import net.ccbluex.liquidbounce.event.events.ClickGuiScaleChangeEvent
+import net.ccbluex.liquidbounce.event.events.ClickGuiValueChangeEvent
+import net.ccbluex.liquidbounce.event.EventManager
 import net.ccbluex.liquidbounce.features.module.ClientModule
 import net.ccbluex.liquidbounce.features.module.ModuleCategories
 import net.ccbluex.liquidbounce.gui.clickgui.ClickGuiScreen
@@ -34,6 +38,21 @@ object ModuleClickGui :
     ClientModule("ClickGUI", ModuleCategories.RENDER, bind = GLFW.GLFW_KEY_RIGHT_SHIFT, disableActivation = true) {
 
     override val running get() = true
+
+    val scale by float("Scale", 1f, 0.5f..2f).onChange { value ->
+        EventManager.callEvent(ClickGuiScaleChangeEvent(value))
+        value
+    }
+
+    val searchBarAutoFocus by boolean("SearchBarAutoFocus", true).onChanged {
+        EventManager.callEvent(ClickGuiValueChangeEvent(this@ModuleClickGui))
+    }
+
+    val snapping = tree(Snapping)
+
+    object Snapping : ToggleableValueGroup(ModuleClickGui, "Snapping", enabled = true) {
+        val gridSize by int("GridSize", 10, 1..100, "px")
+    }
 
     /**
      * True while the player is typing inside a text field of the native ClickGUI,
@@ -53,10 +72,6 @@ object ModuleClickGui :
         super.onEnabled()
     }
 
-    /**
-     * Kept for API compatibility with the old browser GUI. The native GUI reads
-     * live module state every frame, so no explicit synchronisation is required.
-     */
     @JvmStatic
     fun sync() = Unit
 
