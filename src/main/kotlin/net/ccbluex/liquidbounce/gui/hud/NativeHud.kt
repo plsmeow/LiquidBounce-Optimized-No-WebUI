@@ -22,6 +22,7 @@ import net.ccbluex.liquidbounce.event.events.OverlayRenderEvent
 import net.ccbluex.liquidbounce.gui.hud.HudConfig
 import net.ccbluex.liquidbounce.gui.hud.HudElementRegistry
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.Minecraft
 import org.joml.Vector2f
 
 /**
@@ -36,9 +37,12 @@ object NativeHud {
         if (!HudConfig.hudEnabled.get()) {
             return
         }
+        val isScreenOpen = Minecraft.getInstance().gui.screen() != null
         for (element in HudElementRegistry.getAll()) {
             if (element.enabled.get()) {
-                element.renderPosition = Vector2f(element.position.get())
+                if (!isScreenOpen) {
+                    element.renderPosition = Vector2f(element.position.get())
+                }
                 element.render(context, event)
             }
         }

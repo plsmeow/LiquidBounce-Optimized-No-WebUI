@@ -433,6 +433,7 @@ class MultiChooseSetting(private val multi: MultiChoiceListValue<*>, indent: Int
 
     private var open = false
     override val expanded: Boolean get() = open
+    override fun setExpanded(expanded: Boolean) { open = expanded }
 
     override val children: List<Setting> by lazy {
         multi.choices.map { MultiChoiceItemSetting(multi, it, indent + 1) }
@@ -494,6 +495,7 @@ class ColorSetting(value: Value<*>, indent: Int) : Setting(value, indent) {
     private val colorValue get() = value as Value<Color4b>
     private var open = false
     override val expanded: Boolean get() = open
+    override fun setExpanded(expanded: Boolean) { open = expanded }
 
     override val children: List<Setting> by lazy {
         listOf(
@@ -566,6 +568,7 @@ class ModeSetting(private val mode: ModeValueGroup<*>, indent: Int) : Setting(mo
 
     private var open = false
     override val expanded: Boolean get() = open
+    override fun setExpanded(expanded: Boolean) { open = expanded }
 
     // Children depend on the active mode, so cache them per mode to preserve
     // nested expansion state without rebuilding every frame.
@@ -620,6 +623,7 @@ class GroupSetting(private val group: ValueGroup, indent: Int) : Setting(group, 
 
     private var open = false
     override val expanded: Boolean get() = open
+    override fun setExpanded(expanded: Boolean) { open = expanded }
 
     private val toggleable = group as? ToggleableValueGroup
 
@@ -715,6 +719,7 @@ class VectorSetting(value: Value<*>, indent: Int) : Setting(value, indent) {
 
     private var open = false
     override val expanded: Boolean get() = open
+    override fun setExpanded(expanded: Boolean) { open = expanded }
 
     private val axisNames: List<String> = when (value.get()) {
         is Vector2fc -> listOf("X", "Y")
@@ -839,6 +844,7 @@ class MutableListSetting(value: Value<*>, indent: Int) : Setting(value, indent) 
 
     private var open = false
     override val expanded: Boolean get() = open
+    override fun setExpanded(expanded: Boolean) { open = expanded }
 
     private var cachedSize = -1
     private var cachedChildren = listOf<Setting>()
@@ -996,6 +1002,7 @@ class RegistryListSetting(value: Value<*>, indent: Int) : Setting(value, indent)
 
     private var open = false
     override val expanded: Boolean get() = open
+    override fun setExpanded(expanded: Boolean) { open = expanded }
 
     @Suppress("UNCHECKED_CAST")
     private fun getItems(): Collection<*> = value.get() as? Collection<*> ?: emptyList<Any>()
@@ -1061,6 +1068,7 @@ class RegistryMutableListSetting(value: Value<*>, indent: Int) : Setting(value, 
 
     private var open = false
     override val expanded: Boolean get() = open
+    override fun setExpanded(expanded: Boolean) { open = expanded }
 
     @Suppress("UNCHECKED_CAST")
     private fun getMutableList(): MutableList<Any>? = value.get() as? MutableList<Any>
@@ -1142,6 +1150,7 @@ class ItemListSetting(value: Value<*>, indent: Int) : Setting(value, indent) {
 
     private var open = false
     override val expanded: Boolean get() = open
+    override fun setExpanded(expanded: Boolean) { open = expanded }
 
     @Suppress("UNCHECKED_CAST")
     private fun getSelectedSet(): MutableSet<Any>? = value.get() as? MutableSet<Any>

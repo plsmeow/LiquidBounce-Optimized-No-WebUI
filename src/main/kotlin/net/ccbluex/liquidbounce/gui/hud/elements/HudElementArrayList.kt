@@ -38,35 +38,38 @@ object HudElementArrayList : HudElement("arraylist", "ArrayList") {
 
     private const val PADDING = 2f
     private const val SIDE_BAR = 2f
-    private val background = Color4b(0x0A, 0x0A, 0x0F, 0xB4)
 
     override fun onInitialize(screenWidth: Int, screenHeight: Int) {
         if (position.get().x() == 8f && position.get().y() == 8f) {
             // Default to top-right corner on first launch.
             position.set(Vector2f((screenWidth - 100).toFloat(), 8f))
         }
-        alignment = Alignment.TOP_RIGHT
+        alignment.set(Alignment.TOP_RIGHT)
     }
 
     override fun render(context: GuiGraphicsExtractor, event: OverlayRenderEvent) {
         val s = scale.get()
-        val lineHeight = (mc.font.lineHeight + 2) * s
+        val rowHeight = mc.font.lineHeight + 2
 
         val entries = ModuleManager
             .filter { it.enabled && !it.hidden }
             .map { module -> module.name + (module.tag?.let { " $it" } ?: "") }
             .sortedByDescending { mc.font.width(it) }
 
-        val maxWidth = entries.maxOfOrNull { mc.font.width(it) } ?: 0
+        val listHeight = (entries.size * rowHeight).toFloat()
+        val maxTextWidth = (entries.maxOfOrNull { mc.font.width(it) } ?: 0).toFloat()
+        val rowWidth = maxTextWidth + PADDING * 2 + SIDE_BAR
 
-        lastBaseWidth = (maxWidth + PADDING * 2 + SIDE_BAR)
-        lastBaseHeight = (entries.size * (mc.font.lineHeight + 2)).toFloat()
+        lastBaseWidth = rowWidth
+        lastBaseHeight = listHeight
 
         if (entries.isEmpty()) {
             return
         }
 
         val (offX, offY) = getOffset()
+        val horizontal = alignment.get().horizontalComponent
+
         context.pose().withPush {
             translate(renderPosition.x + offX, renderPosition.y + offY)
             scale(s, s)
@@ -75,10 +78,23 @@ object HudElementArrayList : HudElement("arraylist", "ArrayList") {
                 val textWidth = mc.font.width(text).toFloat()
                 val color = accentFor(index, entries.size)
 
-                context.fillRect(0f, y, textWidth + PADDING * 2 + SIDE_BAR, mc.font.lineHeight + 2f, background)
-                context.drawText(text, PADDING, y + 2f, color.argb, shadow = true)
-                context.fillRect(textWidth + PADDING * 2, y, SIDE_BAR, mc.font.lineHeight + 2f, color)
-                y += mc.font.lineHeight + 2f
+                when (horizontal) {
+                    HudElement.Alignment.Horizontal.RIGHT -> {
+                        val textX = rowWidth - PADDING - textWidth
+                        context.fillRect(rowWidth - SIDE_BAR, y, SIDE_BAR, rowHeight.toFloat(), color)
+                        context.drawText(text, textX, y + 2f, color.argb, shadow = true)
+                    }
+                    HudElement.Alignment.Horizontal.CENTER -> {
+                        val textX = (rowWidth - textWidth) / 2f
+                        context.drawText(text, textX, y + 2f, color.argb, shadow = true)
+                    }
+                    else -> {
+                        context.fillRect(0f, y, SIDE_BAR, rowHeight.toFloat(), color)
+                        context.drawText(text, SIDE_BAR + PADDING, y + 2f, color.argb, shadow = true)
+                    }
+                }
+
+                y += rowHeight.toFloat()
             }
         }
     }

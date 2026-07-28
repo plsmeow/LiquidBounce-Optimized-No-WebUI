@@ -79,6 +79,11 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
     private var hudPressY = 0.0
     private var hudMoved = false
 
+    // --- HudEditor alignment context menu ---------------------------------
+    private var contextElement: HudElement? = null
+    private var contextMenuX = 0f
+    private var contextMenuY = 0f
+
     // --- Settings tab state -----------------------------------------------
     private val settingsGroups = LinkedHashMap<String, List<Setting>>()
     private var settingsScroll = 0f
@@ -104,6 +109,13 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
                 px += ClickGuiTheme.PANEL_WIDTH + 6f
             }
         }
+        // Restore module expanded states
+        for (panel in panels) {
+            for (button in panel.buttons) {
+                button.expanded = ClickGuiState.getModuleExpanded(button.module.name)
+            }
+        }
+
         // Initialize HUD elements so they have default sizes for hit-testing
         for (element in HudElementRegistry.getAll()) {
             element.renderPosition = Vector2f(element.position.get())
@@ -126,10 +138,9 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
             }
         }
 
-        // HUD Theme colors
+        // HUD Theme accent color
         settingsGroups["HUD Theme"] = listOf(
-            HudConfig.accentColor, HudConfig.backgroundColor,
-            HudConfig.textColor, HudConfig.secondaryTextColor
+            HudConfig.accentColor
         ).mapNotNull { SettingFactory.create(it, 0) }
 
         // HUD element toggles
@@ -301,8 +312,11 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
         }
 
         // Instruction label
-        context.drawTextCenteredY("[Drag elements to reposition / Click HUD Elements in Settings to toggle]",
-            (width / 2f) - 120f, tabBarHeight + 4f, 12f, ClickGuiTheme.textSecondary)
+        context.drawTextCenteredY("[Drag elements to reposition / Right-click for alignment / Click HUD Elements in Settings to toggle]",
+            (width / 2f) - 160f, tabBarHeight + 4f, 12f, ClickGuiTheme.textSecondary)
+
+        // Context menu for alignment
+        renderContextMenu(context, mouseX, mouseY)
     }
 
     // --- Settings tab -----------------------------------------------------
@@ -341,7 +355,14 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
         val mouseY = click.y
         val button = click.button()
 
-        // HUD editor element click (highest priority - elements may overlap tab bar)
+        // Context menu click (highest priority)
+        if (contextElement != null) {
+            if (handleContextMenuClick(mouseX, mouseY, button)) return true
+            contextElement = null
+            return true
+        }
+
+        // HUD editor element click (elements may overlap tab bar)
         if (activeTab == Tab.HUD_EDITOR && handleHudEditorClick(mouseX, mouseY, button)) return true
 
         // Tab bar click
@@ -417,13 +438,36 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
         if (moduleButton != null) {
             clearFocus(null)
             when (button) {
-                1 -> moduleButton.expanded = !moduleButton.expanded
+                1 -> {
+                    moduleButton.expanded = !moduleButton.expanded
+                    ClickGuiState.setModuleExpanded(moduleButton.module.name, moduleButton.expanded)
+                }
                 else -> moduleButton.module.enabled = !moduleButton.module.enabled
             }
         }
     }
 
     private fun handleHudEditorClick(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        // Right-click: show alignment context menu for the element under cursor
+        if (button == 1) {
+            val elements = HudElementRegistry.getAll().asReversed()
+            for (element in elements) {
+                val (w, h) = element.getScaledSize()
+                if (w <= 0f || h <= 0f) continue
+                val anchor = element.getAnchor()
+                val ex = anchor.x
+                val ey = anchor.y
+                if (mouseX.toFloat() in ex..ex + w && mouseY.toFloat() in ey..ey + h) {
+                    contextElement = element
+                    contextMenuX = mouseX.toFloat()
+                    contextMenuY = mouseY.toFloat()
+                    return true
+                }
+            }
+            return false
+        }
+        // Only left mouse button starts a drag
+        if (button != 0) return false
         // Check all elements, including disabled ones (use getAnchor for proper hit-testing)
         val elements = HudElementRegistry.getAll().asReversed()
         for (element in elements) {
@@ -442,6 +486,131 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
                 return true
             }
         }
+        return false
+    }
+
+    // --- Alignment context menu -------------------------------------------
+
+    private fun renderContextMenu(context: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
+        val element = contextElement ?: return
+
+        val panelW = 150f
+        val rowH = 14f
+        val padding = 4f
+        val btnW = 40f
+        val headerH = 16f
+        val totalH = headerH + padding + rowH + padding + rowH + padding
+
+        val px = contextMenuX.coerceIn(0f, (width - panelW).coerceAtLeast(0f))
+        val py = contextMenuY.coerceIn(0f, (height - totalH).coerceAtLeast(0f))
+
+        // Background
+        context.drawRoundedRect(px, py, px + panelW, py + totalH, 3f,
+            fillColor = ClickGuiTheme.panelBackground,
+            outlineColor = ClickGuiTheme.panelOutline,
+            outlineWidth = 1f)
+
+        // Header
+        context.fillRect(px, py, panelW, headerH, ClickGuiTheme.panelHeader)
+        context.drawTextCenteredY(element.displayName, px + 4f, py, headerH, ClickGuiTheme.textPrimary)
+
+        var yy = py + headerH + padding
+
+        val alignment = element.alignment.get()
+        val h = alignment.horizontalComponent
+
+        // Horizontal row: L C R
+        context.drawTextCenteredY("H:", px + 4f, yy, rowH, ClickGuiTheme.textSecondary)
+        var bx = px + 20f
+        for (horiz in HudElement.Alignment.Horizontal.entries) {
+            val selected = horiz == h
+            val bgColor = if (selected) ClickGuiTheme.accent else ClickGuiTheme.settingBackground
+            context.drawRoundedRect(bx, yy, bx + btnW, yy + rowH, 2f,
+                fillColor = bgColor,
+                outlineColor = ClickGuiTheme.panelOutline,
+                outlineWidth = 0.5f)
+            val textColor = if (selected) ClickGuiTheme.textOnAccent else ClickGuiTheme.textPrimary
+            val label = when (horiz) {
+                HudElement.Alignment.Horizontal.LEFT -> "L"
+                HudElement.Alignment.Horizontal.CENTER -> "C"
+                HudElement.Alignment.Horizontal.RIGHT -> "R"
+            }
+            context.drawTextCenteredY(label, bx + (btnW - GuiRender.textWidth(label)) / 2f, yy, rowH, textColor)
+            bx += btnW + 2f
+        }
+        yy += rowH + padding
+
+        // Vertical row: T C B
+        val v = alignment.verticalComponent
+        context.drawTextCenteredY("V:", px + 4f, yy, rowH, ClickGuiTheme.textSecondary)
+        bx = px + 20f
+        for (vert in HudElement.Alignment.Vertical.entries) {
+            val selected = vert == v
+            val bgColor = if (selected) ClickGuiTheme.accent else ClickGuiTheme.settingBackground
+            context.drawRoundedRect(bx, yy, bx + btnW, yy + rowH, 2f,
+                fillColor = bgColor,
+                outlineColor = ClickGuiTheme.panelOutline,
+                outlineWidth = 0.5f)
+            val textColor = if (selected) ClickGuiTheme.textOnAccent else ClickGuiTheme.textPrimary
+            val label = when (vert) {
+                HudElement.Alignment.Vertical.TOP -> "T"
+                HudElement.Alignment.Vertical.CENTER -> "C"
+                HudElement.Alignment.Vertical.BOTTOM -> "B"
+            }
+            context.drawTextCenteredY(label, bx + (btnW - GuiRender.textWidth(label)) / 2f, yy, rowH, textColor)
+            bx += btnW + 2f
+        }
+    }
+
+    private fun handleContextMenuClick(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val element = contextElement ?: return false
+        if (button != 0) return false
+
+        val panelW = 150f
+        val rowH = 14f
+        val padding = 4f
+        val btnW = 40f
+        val headerH = 16f
+        val totalH = headerH + padding + rowH + padding + rowH + padding
+
+        val px = contextMenuX.coerceIn(0f, (width - panelW).coerceAtLeast(0f))
+        val py = contextMenuY.coerceIn(0f, (height - totalH).coerceAtLeast(0f))
+
+        val mx = mouseX.toFloat()
+        val my = mouseY.toFloat()
+
+        // Check if click is within the panel
+        if (mx < px || mx > px + panelW || my < py || my > py + totalH) {
+            return false
+        }
+
+        var yy = py + headerH + padding
+
+        // Horizontal buttons
+        var bx = px + 20f
+        for (horiz in HudElement.Alignment.Horizontal.entries) {
+            if (mx in bx..bx + btnW && my in yy..yy + rowH) {
+                val newAlignment = HudElement.Alignment.fromComponents(element.alignment.get().verticalComponent, horiz)
+                element.alignment.set(newAlignment)
+                contextElement = null
+                return true
+            }
+            bx += btnW + 2f
+        }
+        yy += rowH + padding
+
+        // Vertical buttons
+        bx = px + 20f
+        for (vert in HudElement.Alignment.Vertical.entries) {
+            if (mx in bx..bx + btnW && my in yy..yy + rowH) {
+                val newAlignment = HudElement.Alignment.fromComponents(vert, element.alignment.get().horizontalComponent)
+                element.alignment.set(newAlignment)
+                contextElement = null
+                return true
+            }
+            bx += btnW + 2f
+        }
+
         return false
     }
 
@@ -678,7 +847,29 @@ class ClickGuiScreen : Screen(PlainText.EMPTY) {
     override fun isPauseScreen(): Boolean = false
 
     override fun removed() {
+        saveExpandedStates()
         ClickGuiState.save()
         super.removed()
+    }
+
+    private fun saveExpandedStates() {
+        for (panel in panels) {
+            for (button in panel.buttons) {
+                ClickGuiState.setModuleExpanded(button.module.name, button.expanded)
+                if (button.expanded) {
+                    saveSettingExpandedStates(button.settings, button.module.name, "")
+                }
+            }
+        }
+    }
+
+    private fun saveSettingExpandedStates(settings: List<Setting>, moduleName: String, parentPath: String) {
+        for (s in settings) {
+            val key = "$moduleName/$parentPath${s.displayName}"
+            ClickGuiState.setSettingExpanded(key, s.expanded)
+            if (s.children.isNotEmpty()) {
+                saveSettingExpandedStates(s.children, moduleName, "$key/")
+            }
+        }
     }
 }

@@ -36,11 +36,13 @@ import org.joml.Vector2f
 /** XYZ coordinates of the player. */
 object HudElementCoordinates : HudElement("coordinates", "Coordinates") {
 
+    private val TEXT_PADDING = 4f
+
     override fun onInitialize(screenWidth: Int, screenHeight: Int) {
         if (position.get().x() == 8f && position.get().y() == 8f) {
             position.set(Vector2f(4f, 60f))
         }
-        alignment = Alignment.TOP_LEFT
+        alignment.set(Alignment.TOP_LEFT)
     }
 
     override fun render(context: GuiGraphicsExtractor, event: OverlayRenderEvent) {
@@ -48,17 +50,19 @@ object HudElementCoordinates : HudElement("coordinates", "Coordinates") {
         val s = scale.get()
         val pos = player.position()
         val text = "XYZ: ${"%.1f".format(pos.x)} ${"%.1f".format(pos.y)} ${"%.1f".format(pos.z)}"
-        val width = (mc.font.width(text) + 4f) * s
-        val height = (mc.font.lineHeight + 4f) * s
+        val textWidth = mc.font.width(text).toFloat()
+        val width = textWidth + TEXT_PADDING
+        val height = mc.font.lineHeight + TEXT_PADDING
 
-        lastBaseWidth = width / s
-        lastBaseHeight = height / s
+        lastBaseWidth = width
+        lastBaseHeight = height
 
         val (offX, offY) = getOffset()
         context.pose().withPush {
             translate(renderPosition.x + offX, renderPosition.y + offY)
             scale(s, s)
-            context.drawText(text, 2f, 0f, HudConfig.textColor.get().argb, shadow = true)
+            val textX = textAlignX(textWidth, width)
+            context.drawText(text, textX, 2f, HudConfig.textColor.get().argb, shadow = true)
         }
     }
 }
@@ -66,28 +70,32 @@ object HudElementCoordinates : HudElement("coordinates", "Coordinates") {
 /** FPS counter. */
 object HudElementFps : HudElement("fps", "FPS") {
 
+    private val TEXT_PADDING = 4f
+
     override fun onInitialize(screenWidth: Int, screenHeight: Int) {
         if (position.get().x() == 8f && position.get().y() == 8f) {
             position.set(Vector2f(4f, 100f))
         }
-        alignment = Alignment.TOP_LEFT
+        alignment.set(Alignment.TOP_LEFT)
     }
 
     override fun render(context: GuiGraphicsExtractor, event: OverlayRenderEvent) {
         val s = scale.get()
         val fps = mc.fps
         val text = "FPS: $fps"
-        val width = (mc.font.width(text) + 4f) * s
-        val height = (mc.font.lineHeight + 4f) * s
+        val textWidth = mc.font.width(text).toFloat()
+        val width = textWidth + TEXT_PADDING
+        val height = mc.font.lineHeight + TEXT_PADDING
 
-        lastBaseWidth = width / s
-        lastBaseHeight = height / s
+        lastBaseWidth = width
+        lastBaseHeight = height
 
         val (offX, offY) = getOffset()
         context.pose().withPush {
             translate(renderPosition.x + offX, renderPosition.y + offY)
             scale(s, s)
-            context.drawText(text, 2f, 0f, HudConfig.textColor.get().argb, shadow = true)
+            val textX = textAlignX(textWidth, width)
+            context.drawText(text, textX, 2f, HudConfig.textColor.get().argb, shadow = true)
         }
     }
 }
@@ -95,28 +103,32 @@ object HudElementFps : HudElement("fps", "FPS") {
 /** Network ping (ms) to the current server. */
 object HudElementPing : HudElement("ping", "Ping") {
 
+    private val TEXT_PADDING = 4f
+
     override fun onInitialize(screenWidth: Int, screenHeight: Int) {
         if (position.get().x() == 8f && position.get().y() == 8f) {
             position.set(Vector2f(80f, 100f))
         }
-        alignment = Alignment.TOP_LEFT
+        alignment.set(Alignment.TOP_LEFT)
     }
 
     override fun render(context: GuiGraphicsExtractor, event: OverlayRenderEvent) {
         val s = scale.get()
         val ping = mc.player?.ping ?: 0
         val text = "Ping: ${ping}ms"
-        val width = (mc.font.width(text) + 4f) * s
-        val height = (mc.font.lineHeight + 4f) * s
+        val textWidth = mc.font.width(text).toFloat()
+        val width = textWidth + TEXT_PADDING
+        val height = mc.font.lineHeight + TEXT_PADDING
 
-        lastBaseWidth = width / s
-        lastBaseHeight = height / s
+        lastBaseWidth = width
+        lastBaseHeight = height
 
         val (offX, offY) = getOffset()
         context.pose().withPush {
             translate(renderPosition.x + offX, renderPosition.y + offY)
             scale(s, s)
-            context.drawText(text, 2f, 0f, HudConfig.textColor.get().argb, shadow = true)
+            val textX = textAlignX(textWidth, width)
+            context.drawText(text, textX, 2f, HudConfig.textColor.get().argb, shadow = true)
         }
     }
 }
@@ -124,11 +136,13 @@ object HudElementPing : HudElement("ping", "Ping") {
 /** Server IP (or "Singleplayer"). */
 object HudElementServerIp : HudElement("serverip", "Server IP") {
 
+    private val TEXT_PADDING = 4f
+
     override fun onInitialize(screenWidth: Int, screenHeight: Int) {
         if (position.get().x() == 8f && position.get().y() == 8f) {
             position.set(Vector2f(4f, 140f))
         }
-        alignment = Alignment.TOP_LEFT
+        alignment.set(Alignment.TOP_LEFT)
     }
 
     override fun render(context: GuiGraphicsExtractor, event: OverlayRenderEvent) {
@@ -139,17 +153,19 @@ object HudElementServerIp : HudElement("serverip", "Server IP") {
             mc.currentServer?.ip ?: "N/A"
         }
         val display = "Server: $text"
-        val width = (mc.font.width(display) + 4f) * s
-        val height = (mc.font.lineHeight + 4f) * s
+        val textWidth = mc.font.width(display).toFloat()
+        val width = textWidth + TEXT_PADDING
+        val height = mc.font.lineHeight + TEXT_PADDING
 
-        lastBaseWidth = width / s
-        lastBaseHeight = height / s
+        lastBaseWidth = width
+        lastBaseHeight = height
 
         val (offX, offY) = getOffset()
         context.pose().withPush {
             translate(renderPosition.x + offX, renderPosition.y + offY)
             scale(s, s)
-            context.drawText(display, 2f, 0f, HudConfig.textColor.get().argb, shadow = true)
+            val textX = textAlignX(textWidth, width)
+            context.drawText(display, textX, 2f, HudConfig.textColor.get().argb, shadow = true)
         }
     }
 }
@@ -157,15 +173,16 @@ object HudElementServerIp : HudElement("serverip", "Server IP") {
 /** Armor display (vanilla-style armor icons). */
 object HudElementArmor : HudElement("armor", "Armor") {
 
-    private const val ICON_SIZE = 16
-    private const val GAP = 1
-    private const val BG_PADDING = 2
+    private val ICON_SIZE = 16
+    private val GAP = 1
+    private val BG_PADDING = 2
+    private val armorBackground = Color4b(0x0A, 0x0A, 0x0F, 0xB4)
 
     override fun onInitialize(screenWidth: Int, screenHeight: Int) {
         if (position.get().x() == 8f && position.get().y() == 8f) {
             position.set(Vector2f(4f, (mc.window.guiScaledHeight - 22).toFloat()))
         }
-        alignment = Alignment.TOP_LEFT
+        alignment.set(Alignment.TOP_LEFT)
     }
 
     override fun render(context: GuiGraphicsExtractor, event: OverlayRenderEvent) {
@@ -194,7 +211,7 @@ object HudElementArmor : HudElement("armor", "Armor") {
         context.pose().withPush {
             translate(renderPosition.x + offX, renderPosition.y + offY)
             scale(s, s)
-            context.fillRect(0f, 0f, totalWidth, totalHeight, HudConfig.backgroundColor.get().alpha(160))
+            context.fillRect(0f, 0f, totalWidth, totalHeight, armorBackground)
             var x = BG_PADDING.toFloat()
             for (stack in nonEmpty) {
                 context.item(stack, x.toInt(), BG_PADDING)
@@ -211,7 +228,7 @@ object HudElementEffects : HudElement("effects", "Effects") {
         if (position.get().x() == 8f && position.get().y() == 8f) {
             position.set(Vector2f(4f, 160f))
         }
-        alignment = Alignment.TOP_LEFT
+        alignment.set(Alignment.TOP_LEFT)
     }
 
     override fun render(context: GuiGraphicsExtractor, event: OverlayRenderEvent) {
@@ -226,7 +243,8 @@ object HudElementEffects : HudElement("effects", "Effects") {
                 "${effect.amplifier + 1} " +
                 "${effect.duration / 20}s"
         }
-        val width = (lines.maxOfOrNull { mc.font.width(it) } ?: 0) + 4f
+        val maxTextWidth = lines.maxOfOrNull { mc.font.width(it) } ?: 0
+        val width = maxTextWidth + 4f
         val height = (lines.size * (mc.font.lineHeight + 1)).toFloat()
 
         lastBaseWidth = width
@@ -238,7 +256,9 @@ object HudElementEffects : HudElement("effects", "Effects") {
             scale(s, s)
             var y = 0f
             for (line in lines) {
-                context.drawText(line, 2f, y, HudConfig.textColor.get().argb, shadow = true)
+                val textWidth = mc.font.width(line).toFloat()
+                val textX = textAlignX(textWidth, width)
+                context.drawText(line, textX, y, HudConfig.textColor.get().argb, shadow = true)
                 y += mc.font.lineHeight + 1f
             }
         }

@@ -37,7 +37,23 @@ class ModuleButton(val module: ClientModule) {
     var width = 0f
     var expanded = false
 
-    val settings: List<Setting> by lazy { buildSettings(module, indent = 0, skipEnabled = true) }
+    val settings: List<Setting> by lazy {
+        buildSettings(module, indent = 0, skipEnabled = true).also { list ->
+            restoreSettingExpandedStates(list, "")
+        }
+    }
+
+    private fun restoreSettingExpandedStates(settings: List<Setting>, parentPath: String) {
+        for (s in settings) {
+            val key = "${module.name}/$parentPath${s.displayName}"
+            if (ClickGuiState.getSettingExpanded(key)) {
+                s.setExpanded(true)
+            }
+            if (s.children.isNotEmpty()) {
+                restoreSettingExpandedStates(s.children, "$key/")
+            }
+        }
+    }
 
     val rowHeight: Float get() = ClickGuiTheme.MODULE_HEIGHT.toFloat()
 

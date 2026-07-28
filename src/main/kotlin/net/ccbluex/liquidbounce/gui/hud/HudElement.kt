@@ -19,6 +19,7 @@
 package net.ccbluex.liquidbounce.gui.hud
 
 import net.ccbluex.liquidbounce.config.types.Value
+import net.ccbluex.liquidbounce.config.types.list.Tagged
 import net.ccbluex.liquidbounce.event.events.OverlayRenderEvent
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import org.joml.Vector2f
@@ -48,7 +49,7 @@ abstract class HudElement(
     val scale: Value<Float> = HudConfig.float("$id-scale", 1.0f, 0.5f..2.0f)
 
     /** Where the position anchor refers to on the element's own bounds. */
-    var alignment: Alignment = Alignment.TOP_LEFT
+    val alignment: Value<Alignment> = HudConfig.enumChoice("$id-alignment", Alignment.TOP_LEFT)
 
     /** Cached natural size (at scale 1.0). Updated every frame by [render]. */
     protected var lastBaseWidth = 80f
@@ -86,7 +87,7 @@ abstract class HudElement(
     fun getOffset(): Pair<Float, Float> {
         val (w, h) = getScaledSize()
         val p = renderPosition
-        return when (alignment) {
+        return when (alignment.get()) {
             Alignment.TOP_LEFT -> 0f to 0f
             Alignment.TOP_CENTER -> -w / 2f to 0f
             Alignment.TOP_RIGHT -> -w to 0f
@@ -103,7 +104,7 @@ abstract class HudElement(
     fun getAnchor(): Vector2f {
         val p = renderPosition
         val (w, h) = getScaledSize()
-        return when (alignment) {
+        return when (alignment.get()) {
             Alignment.TOP_LEFT -> Vector2f(p.x, p.y)
             Alignment.TOP_CENTER -> Vector2f(p.x - w / 2f, p.y)
             Alignment.TOP_RIGHT -> Vector2f(p.x - w, p.y)
@@ -133,10 +134,53 @@ abstract class HudElement(
         lastBaseHeight = height
     }
 
-    enum class Alignment {
-        TOP_LEFT, TOP_CENTER, TOP_RIGHT,
-        CENTER_LEFT, CENTER, CENTER_RIGHT,
-        BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT,
+    protected fun textAlignX(textWidth: Float, containerWidth: Float): Float {
+        return when (alignment.get().horizontalComponent) {
+            Alignment.Horizontal.RIGHT -> containerWidth - textWidth - 2f
+            Alignment.Horizontal.CENTER -> (containerWidth - textWidth) / 2f
+            Alignment.Horizontal.LEFT -> 2f
+        }
+    }
+
+    enum class Alignment(override val tag: String) : Tagged {
+        TOP_LEFT("Top Left"), TOP_CENTER("Top Center"), TOP_RIGHT("Top Right"),
+        CENTER_LEFT("Center Left"), CENTER("Center"), CENTER_RIGHT("Center Right"),
+        BOTTOM_LEFT("Bottom Left"), BOTTOM_CENTER("Bottom Center"), BOTTOM_RIGHT("Bottom Right");
+
+        enum class Vertical { TOP, CENTER, BOTTOM }
+        enum class Horizontal { LEFT, CENTER, RIGHT }
+
+        val verticalComponent: Vertical get() = when (this) {
+            TOP_LEFT, TOP_CENTER, TOP_RIGHT -> Vertical.TOP
+            CENTER_LEFT, CENTER, CENTER_RIGHT -> Vertical.CENTER
+            BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT -> Vertical.BOTTOM
+        }
+
+        val horizontalComponent: Horizontal get() = when (this) {
+            TOP_LEFT, CENTER_LEFT, BOTTOM_LEFT -> Horizontal.LEFT
+            TOP_CENTER, CENTER, BOTTOM_CENTER -> Horizontal.CENTER
+            TOP_RIGHT, CENTER_RIGHT, BOTTOM_RIGHT -> Horizontal.RIGHT
+        }
+
+        companion object {
+            fun fromComponents(v: Vertical, h: Horizontal): Alignment = when (v) {
+                Vertical.TOP -> when (h) {
+                    Horizontal.LEFT -> TOP_LEFT
+                    Horizontal.CENTER -> TOP_CENTER
+                    Horizontal.RIGHT -> TOP_RIGHT
+                }
+                Vertical.CENTER -> when (h) {
+                    Horizontal.LEFT -> CENTER_LEFT
+                    Horizontal.CENTER -> CENTER
+                    Horizontal.RIGHT -> CENTER_RIGHT
+                }
+                Vertical.BOTTOM -> when (h) {
+                    Horizontal.LEFT -> BOTTOM_LEFT
+                    Horizontal.CENTER -> BOTTOM_CENTER
+                    Horizontal.RIGHT -> BOTTOM_RIGHT
+                }
+            }
+        }
     }
 }
 

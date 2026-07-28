@@ -56,6 +56,9 @@ abstract class Setting(val value: Value<*>, val indent: Int) {
 
     open val expanded: Boolean get() = false
 
+    /** Called to restore the expanded state from persistence. */
+    open fun setExpanded(expanded: Boolean) {}
+
     protected val labelX: Float get() = x + ClickGuiTheme.TEXT_PADDING + indent * ClickGuiTheme.SETTING_INDENT
 
     fun hovered(mouseX: Double, mouseY: Double): Boolean =

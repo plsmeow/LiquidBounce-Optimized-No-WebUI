@@ -18,6 +18,7 @@
  */
 package net.ccbluex.liquidbounce.gui.clickgui
 
+import net.ccbluex.liquidbounce.gui.hud.HudConfig
 import net.ccbluex.liquidbounce.render.engine.type.Color4b
 
 /**
@@ -25,32 +26,35 @@ import net.ccbluex.liquidbounce.render.engine.type.Color4b
  *
  * Keeping every visual constant here makes it trivial to retheme the whole GUI
  * from a single place, similar to Meteor Client's `GuiTheme`.
+ *
+ * The accent colour is derived from [HudConfig.accentColor] so that the user's
+ * HUD theme preference propagates to the ClickGUI automatically.
  */
 object ClickGuiTheme {
 
     // --- Accent -----------------------------------------------------------
     /** Primary accent color, used for enabled modules, sliders and highlights. */
-    val accent = Color4b(0x59, 0x7C, 0xFF, 0xFF)
-    val accentDim = Color4b(0x59, 0x7C, 0xFF, 0x40)
+    val accent: Color4b get() = HudConfig.accentColor.get()
+    val accentDim: Color4b get() = HudConfig.accentColor.get().alpha(64)
 
     // --- Panels -----------------------------------------------------------
     val panelBackground = Color4b(0x14, 0x15, 0x1A, 0xF2)
     val panelHeader = Color4b(0x1E, 0x1F, 0x28, 0xFF)
-    val panelHeaderActive = accent
+    val panelHeaderActive: Color4b get() = accent
     val panelOutline = Color4b(0x00, 0x00, 0x00, 0x50)
 
     // --- Modules / rows ---------------------------------------------------
     val moduleBackground = Color4b(0x00, 0x00, 0x00, 0x00)
     val moduleHover = Color4b(0xFF, 0xFF, 0xFF, 0x14)
-    val moduleActive = accent
+    val moduleActive: Color4b get() = accent
 
     // --- Settings ---------------------------------------------------------
     val settingBackground = Color4b(0x0C, 0x0D, 0x11, 0xC0)
     val settingHover = Color4b(0xFF, 0xFF, 0xFF, 0x0E)
     val sliderTrack = Color4b(0x3A, 0x3C, 0x4A, 0xFF)
-    val sliderFill = accent
+    val sliderFill: Color4b get() = accent
     val checkboxOff = Color4b(0x3A, 0x3C, 0x4A, 0xFF)
-    val checkboxOn = accent
+    val checkboxOn: Color4b get() = accent
 
     // --- Text -------------------------------------------------------------
     val textPrimary = Color4b(0xE8, 0xEA, 0xF0, 0xFF).argb

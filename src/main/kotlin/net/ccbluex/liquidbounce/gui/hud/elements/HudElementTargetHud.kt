@@ -42,12 +42,13 @@ object HudElementTargetHud : HudElement("targethud", "TargetHUD") {
 
     private const val HEIGHT = 36f
     private const val WIDTH = 140f
+    private val targetBackground = Color4b(0x0A, 0x0A, 0x0F, 0xB4)
 
     override fun onInitialize(screenWidth: Int, screenHeight: Int) {
         if (position.get().x() == 8f && position.get().y() == 8f) {
             position.set(Vector2f(screenWidth / 2f, screenHeight / 2f + 30f))
         }
-        alignment = Alignment.TOP_CENTER
+        alignment.set(Alignment.TOP_CENTER)
     }
 
     override fun render(context: GuiGraphicsExtractor, event: OverlayRenderEvent) {
@@ -71,8 +72,7 @@ object HudElementTargetHud : HudElement("targethud", "TargetHUD") {
             scale(s, s)
 
             // Background box
-            context.roundedRect(0f, 0f, WIDTH, HEIGHT, 3f,
-                HudConfig.backgroundColor.get().alpha(180))
+            context.roundedRect(0f, 0f, WIDTH, HEIGHT, 3f, targetBackground)
             // Border
             context.drawRoundedRect(0f, 0f, WIDTH, HEIGHT, 3f, outlineColor = Color4b(0, 0, 0, 100))
 

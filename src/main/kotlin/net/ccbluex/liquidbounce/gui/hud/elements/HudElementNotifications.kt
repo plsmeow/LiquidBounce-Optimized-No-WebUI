@@ -90,11 +90,13 @@ object NotificationManager : EventListener {
  */
 object HudElementNotificationList : HudElement("notifications", "Notifications") {
 
+    private val notificationBackground = Color4b(0x0A, 0x0A, 0x0F, 0xB4)
+
     override fun onInitialize(screenWidth: Int, screenHeight: Int) {
         if (position.get().x() == 8f && position.get().y() == 8f) {
             position.set(Vector2f((screenWidth - 200).toFloat(), 4f))
         }
-        alignment = Alignment.TOP_RIGHT
+        alignment.set(Alignment.TOP_RIGHT)
     }
 
     override fun render(context: GuiGraphicsExtractor, event: OverlayRenderEvent) {
@@ -124,6 +126,13 @@ object HudElementNotificationList : HudElement("notifications", "Notifications")
         lastBaseWidth = totalWidth
         lastBaseHeight = totalHeight
 
+        val horizontal = alignment.get().horizontalComponent
+        val barX = when (horizontal) {
+            HudElement.Alignment.Horizontal.RIGHT -> totalWidth - 2f
+            else -> 0f
+        }
+        val textX = 6f
+
         val (offX, offY) = getOffset()
         context.pose().withPush {
             translate(renderPosition.x + offX, renderPosition.y + offY)
@@ -131,15 +140,15 @@ object HudElementNotificationList : HudElement("notifications", "Notifications")
             var y = 0f
             for (entry in list) {
                 val a = entry.alpha(now)
-                val bg = HudConfig.backgroundColor.get().alpha(180).alpha(a)
+                val bg = notificationBackground.alpha(a)
                 val accent = accentFor(entry.severity).alpha(a)
                 val text = HudConfig.textColor.get().alpha(a)
                 val sub = HudConfig.secondaryTextColor.get().alpha(a)
 
                 context.roundedRect(0f, y, totalWidth, itemHeight.toFloat(), 3f, bg)
-                context.fillRect(0f, y, 2f, itemHeight.toFloat(), accent)
-                context.drawText(entry.title, 6f, y + 2f, text.argb, shadow = true)
-                context.drawText(entry.message, 6f, y + mc.font.lineHeight + 3f, sub.argb, shadow = true)
+                context.fillRect(barX, y, 2f, itemHeight.toFloat(), accent)
+                context.drawText(entry.title, textX, y + 2f, text.argb, shadow = true)
+                context.drawText(entry.message, textX, y + mc.font.lineHeight + 3f, sub.argb, shadow = true)
                 y += itemHeight + 1
             }
         }
