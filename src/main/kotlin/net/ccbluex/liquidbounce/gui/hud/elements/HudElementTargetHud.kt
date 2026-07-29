@@ -19,6 +19,11 @@
 package net.ccbluex.liquidbounce.gui.hud.elements
 
 import net.ccbluex.liquidbounce.event.events.OverlayRenderEvent
+import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleAimbot
+import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleAutoShoot
+import net.ccbluex.liquidbounce.features.module.modules.combat.crystalaura.ModuleCrystalAura
+import net.ccbluex.liquidbounce.features.module.modules.combat.elytratarget.ModuleElytraTarget
+import net.ccbluex.liquidbounce.features.module.modules.combat.killaura.ModuleKillAura
 import net.ccbluex.liquidbounce.gui.clickgui.drawText
 import net.ccbluex.liquidbounce.gui.clickgui.fillRect
 import net.ccbluex.liquidbounce.gui.clickgui.roundedRect
@@ -104,6 +109,22 @@ object HudElementTargetHud : HudElement("targethud", "TargetHUD") {
     }
 
     private fun currentTarget(): LivingEntity? {
+        if (ModuleKillAura.running) {
+            ModuleKillAura.targetTracker.target?.let { return it }
+        }
+        if (ModuleCrystalAura.running) {
+            ModuleCrystalAura.targetTracker.target?.let { return it }
+        }
+        if (ModuleAimbot.running) {
+            ModuleAimbot.targetTracker.target?.let { return it }
+        }
+        if (ModuleElytraTarget.running) {
+            ModuleElytraTarget.target?.let { return it }
+        }
+        if (ModuleAutoShoot.running) {
+            ModuleAutoShoot.targetTracker.target?.let { return it }
+        }
+
         val hitResult = mc.hitResult
         val entity = (hitResult as? EntityHitResult)?.entity ?: return null
         return entity as? LivingEntity

@@ -18,6 +18,8 @@
  */
 package net.ccbluex.liquidbounce.integration.theme.component
 
+import net.ccbluex.liquidbounce.gui.hud.elements.HudElementEffects
+
 enum class HudComponentTweak {
     TWEAK_HOTBAR,
     DISABLE_CROSSHAIR,
@@ -46,7 +48,10 @@ interface HudComponent {
 
 object HudComponentManager {
     @JvmStatic
-    fun isTweakEnabled(tweak: HudComponentTweak): Boolean = false
+    fun isTweakEnabled(tweak: HudComponentTweak): Boolean = when (tweak) {
+        HudComponentTweak.DISABLE_STATUS_EFFECT_OVERLAY -> HudElementEffects.enabled.get()
+        else -> false
+    }
 
     @JvmStatic
     fun getComponentWithTweak(tweak: HudComponentTweak): HudComponent? = null

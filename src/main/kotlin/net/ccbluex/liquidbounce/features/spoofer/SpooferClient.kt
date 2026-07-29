@@ -53,7 +53,7 @@ object SpooferClient : ToggleableValueGroup(name = "ClientSpoofer", enabled = fa
         override fun getBrand(): String = "CB"
     }
 
-    private object Custom : SpoofMode("Custom") {
+    object Custom : SpoofMode("Custom") {
 
         val brandName by text("BrandName", "")
 

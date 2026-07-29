@@ -62,12 +62,14 @@ object HudElementWatermark : HudElement("watermark", "Watermark") {
             HudElement.Alignment.Horizontal.RIGHT -> width - barWidth
             HudElement.Alignment.Horizontal.CENTER -> 0f
         }
+        val accentColor = HudConfig.accentColor.get()
+
         context.pose().withPush {
             translate(renderPosition.x + offX, renderPosition.y + offY)
             scale(s, s)
             context.fillRect(0f, 0f, width, totalHeight, background)
-            context.fillRect(barX, 0f, barWidth, totalHeight, HudConfig.accentColor.get())
-            context.drawText(name, 6f, 2f, HudConfig.accentColor.get().argb, shadow = true)
+            context.fillRect(barX, 0f, barWidth, totalHeight, accentColor)
+            context.drawText(name, 6f, 2f, accentColor.argb, shadow = true)
             context.drawText(version, 6f, 2f + mc.font.lineHeight + 1f,
                 HudConfig.secondaryTextColor.get().argb, shadow = true)
         }
