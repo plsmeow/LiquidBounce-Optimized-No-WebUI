@@ -100,10 +100,6 @@ object HudElementArrayList : HudElement("arraylist", "ArrayList") {
     }
 
     private fun accentFor(index: Int, total: Int): Color4b {
-        if (total <= 1) {
-            return HudConfig.accentColor.get()
-        }
-        val hue = 0.6f + (index.toFloat() / total) * 0.25f
-        return Color4b.ofHSB(hue % 1f, 0.55f, 1f)
+        return HudConfig.accentColor.get()
     }
 }
